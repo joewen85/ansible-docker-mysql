@@ -1,0 +1,32 @@
+- name: create data folder
+  shell: mkdir -p /data/mysql
+
+- name: create config folder
+  shell: mkdir -p /data/confs/mysql
+
+- name: call python3
+  shell: rm -rf /usr/bin/python && ln -s /usr/bin/python3 /usr/bin/python
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version|int == 7
+
+- name: create mysql service
+  community.docker.docker_container:
+    name: mysql_db
+    image: registry.yunzmall.com/yunzhong/shop:mysql
+    detach: yes
+    restart_policy: always
+    networks:
+      - name: yzshop
+    network_mode: yzshop
+    command: [ "--character-set-server=utf8mb4","--explicit_defaults_for_timestamp=true","--default-authentication-plugin=mysql_native_password","--collation-server=utf8mb4_unicode_ci" ]
+    ports:
+      - "127.0.0.1:3306:3306"
+    env:
+      MYSQL_ROOT_PASSWORD: "{{ mysql_password }}"
+      MYSQL_ROOT_HOST: "%"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /data/mysql:/var/lib/mysql:rw
+
+- name: recovery python2
+  shell: rm -rf /usr/bin/python && ln -s /usr/bin/python2 /usr/bin/python
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version|int == 7
